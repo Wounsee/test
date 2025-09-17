@@ -1,174 +1,223 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Простой чат</title>
-  <style>
-    :root { --bg:#0f1720; --panel:#0b1320; --accent:#0ea5a4; --muted:#94a3b8; --text:#e6eef6; }
-    body { margin:0; font-family:Inter,system-ui,Arial; background:linear-gradient(180deg,#071022, #0b1220); color:var(--text); display:flex; height:100vh; align-items:center; justify-content:center; }
-    .app { width: min(880px, 96vw); height: 88vh; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.03); border-radius:12px; display:flex; overflow:hidden; box-shadow: 0 6px 30px rgba(0,0,0,0.6); }
-    .sidebar { width:260px; padding:18px; border-right:1px solid rgba(255,255,255,0.02); box-sizing:border-box; background: rgba(255,255,255,0.01); }
-    .main { flex:1; display:flex; flex-direction:column; }
-    h1 { margin:0 0 8px 0; font-size:18px; color:var(--accent); }
-    .muted { color:var(--muted); font-size:13px; margin-bottom:12px; }
-    .chat { padding:12px; flex:1; overflow:auto; display:flex; flex-direction:column; gap:8px; }
-    .msg { max-width:70%; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.02); color:var(--text); font-size:14px; box-shadow: 0 1px 0 rgba(255,255,255,0.01) inset; }
-    .msg.me { margin-left:auto; background: linear-gradient(90deg, rgba(14,165,164,0.14), rgba(14,165,164,0.08)); border:1px solid rgba(14,165,164,0.12); }
-    .msg .meta { font-size:12px; color:var(--muted); margin-bottom:6px; display:flex; gap:8px; align-items:center; }
-    .inputbar { padding:12px; display:flex; gap:8px; border-top:1px solid rgba(255,255,255,0.02); }
-    .inputbar input[type="text"] { flex:1; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:var(--text); outline:none; }
-    .btn { background:var(--accent); color:#042a2a; border:none; padding:9px 14px; border-radius:8px; cursor:pointer; font-weight:600; }
-    .small { font-size:13px; color:var(--muted); }
-    .nameRow { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
-    .nameRow input { flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:var(--text); }
-    .typing { font-size:13px; color:var(--muted); height:18px; margin-left:12px; }
-    .sys { text-align:center; color:var(--muted); font-size:13px; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>TG Mini Chat — Mobile + Desktop (context menu)</title>
+<style>
+  :root{
+    --bg:#041021; --panel:#07122a; --accent:#00d1c6; --muted:#9fb3c9; --text:#e6f6f7;
+    --card:#072036; --danger:#ff6b6b;
+  }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Arial;background:linear-gradient(180deg,var(--bg),#061426);color:var(--text)}
+  .wrap{max-width:720px;margin:0 auto;height:100vh;display:flex;flex-direction:column;padding:12px;box-sizing:border-box}
+  header{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:linear-gradient(180deg,var(--panel),#02131b);box-shadow:0 8px 30px rgba(1,6,10,0.6)}
+  .logo{font-weight:700;color:var(--accent);font-size:18px}
+  .sub{color:var(--muted);font-size:13px;margin-left:auto}
+  #chat{flex:1;margin-top:12px;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:8px}
+  .msg{max-width:82%;padding:10px;border-radius:12px;background:var(--card);font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
+  .meta{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;gap:8px;align-items:center}
+  .me{margin-left:auto;background:linear-gradient(90deg, rgba(0,209,198,0.12), rgba(0,209,198,0.06));color:#042828;border:1px solid rgba(0,209,198,0.12)}
+  .sys{text-align:center;color:var(--muted);font-size:13px}
+  .compose{display:flex;padding:10px;gap:8px;align-items:center;border-radius:10px;background:linear-gradient(180deg,#071826,#051219);margin-top:8px}
+  .compose input{flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--text);outline:none;font-size:16px}
+  .btn{background:var(--accent);color:#002727;border:none;padding:12px 14px;border-radius:10px;font-weight:700;font-size:15px}
+  .typing{height:18px;color:var(--muted);font-size:13px;margin:6px 4px}
+  /* context menu (long-press & right-click) */
+  .ctxmenu{position:fixed;background:#072436;border:1px solid rgba(255,255,255,0.03);padding:6px;border-radius:8px;z-index:9999;display:none;box-shadow:0 8px 30px rgba(0,0,0,0.6);min-width:140px}
+  .ctxmenu button{display:block;background:transparent;border:none;color:var(--text);padding:8px 10px;border-radius:6px;text-align:left;width:100%;font-size:15px}
+  .ctxmenu button:hover{background:rgba(255,255,255,0.02)}
+  .ctxmenu .danger{color:var(--danger);font-weight:700}
+  /* mobile adjustments */
+  @media (max-width:420px){
+    .wrap{padding:8px}
+    .logo{font-size:16px}
+    .compose input{font-size:15px;padding:10px}
+    .btn{padding:10px 12px}
+  }
+</style>
 </head>
 <body>
-  <div class="app" role="application">
-    <div class="sidebar">
-      <h1>Простой чат</h1>
-      <div class="muted">Небольшой недо-мессенджер на Socket.IO</div>
-      <div class="nameRow">
-        <input id="nameInput" placeholder="Ваше имя (например: Ivan)" maxlength="32" />
-        <button id="joinBtn" class="btn">Войти</button>
-      </div>
-      <div class="small">Подключено: <span id="status">–</span></div>
-      <div style="height:12px;"></div>
-      <div class="small">Локальные сообщения хранятся в памяти сервера (сбросятся при рестарте)</div>
-    </div>
+  <div class="wrap">
+    <header>
+      <div class="logo">TG Mini Chat</div>
+      <div class="sub">Mobile-first • Moderator: @wounsee</div>
+    </header>
 
-    <div class="main">
-      <div class="chat" id="chat"></div>
+    <div id="chat" role="log" aria-live="polite"></div>
+    <div id="typing" class="typing"></div>
 
-      <div style="display:flex; align-items:center; gap:12px; padding:8px 12px;">
-        <div class="typing" id="typingIndicator"></div>
-      </div>
-
-      <div class="inputbar">
-        <input id="messageInput" type="text" placeholder="Введите сообщение..." />
-        <button id="sendBtn" class="btn">Отправить</button>
-      </div>
+    <div class="compose">
+      <input id="message" placeholder="Введите сообщение..." aria-label="message"/>
+      <button id="send" class="btn">Отправить</button>
     </div>
   </div>
 
-  <!-- socket.io client from CDN -->
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script>
-    // Простой клиент
-    const socket = io(); // подключение к тому же хосту
-    const chatEl = document.getElementById("chat");
-    const nameInput = document.getElementById("nameInput");
-    const joinBtn = document.getElementById("joinBtn");
-    const sendBtn = document.getElementById("sendBtn");
-    const messageInput = document.getElementById("messageInput");
-    const status = document.getElementById("status");
-    const typingIndicator = document.getElementById("typingIndicator");
+  <div id="ctx" class="ctxmenu" role="menu" aria-hidden="true">
+    <button id="ctxCopy">Копировать</button>
+    <button id="ctxDelete" class="danger">Удалить</button>
+    <button id="ctxBan" class="danger">Забанить</button>
+    <button id="ctxClose">Отмена</button>
+  </div>
 
-    let myName = null;
-    let typingTimer = null;
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  /* ====== config & helpers ====== */
+  const socket = io();
+  const chat = document.getElementById('chat');
+  const msgInput = document.getElementById('message');
+  const sendBtn = document.getElementById('send');
+  const typingEl = document.getElementById('typing');
+  const ctx = document.getElementById('ctx');
+  const ctxCopy = document.getElementById('ctxCopy');
+  const ctxDelete = document.getElementById('ctxDelete');
+  const ctxBan = document.getElementById('ctxBan');
+  const ctxClose = document.getElementById('ctxClose');
 
-    function addMessage(msg, opts = {}) {
-      // msg: { id, user, text, time, meta? }
-      const wrap = document.createElement("div");
-      if (msg.meta && msg.meta.system) {
-        wrap.className = "sys";
-        wrap.textContent = `${new Date(msg.time).toLocaleTimeString()} — ${msg.text}`;
-      } else {
-        wrap.className = "msg" + ((msg.user === myName) ? " me" : "");
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        meta.innerHTML = `<strong>${escapeHtml(msg.user)}</strong> • <span style="opacity:0.8;">${new Date(msg.time).toLocaleTimeString()}</span>`;
-        const txt = document.createElement("div");
-        txt.className = "txt";
-        txt.textContent = msg.text;
-        wrap.appendChild(meta);
-        wrap.appendChild(txt);
-      }
-      chatEl.appendChild(wrap);
-      // scroll to bottom
-      chatEl.scrollTop = chatEl.scrollHeight;
+  // moderator nick and mod-secret pulled from query (optional - convenient for dev)
+  const params = new URLSearchParams(location.search);
+  const moderatorNick = "@wounsee";
+  const MOD_SECRET_IN_URL = params.get('mod') || ""; // optional, dev only
+  let myName = null;
+  let currentCtxTarget = null; // {id, user, text, node}
+
+  function esc(s){ return String(s||'').replace(/[&<>"']/g, (m)=> ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[m]); }
+  function genId(){ return Math.random().toString(36).slice(2,10); }
+
+  /* ====== auto-join from ?tg= (bot provides this) ====== */
+  (function autoJoin(){
+    const tg = params.get('tg') || "";
+    let name = tg.trim();
+    if (!name) name = "Anon" + Math.floor(Math.random()*9000+100);
+    myName = name.startsWith('@') ? name : name;
+    socket.emit('join', { user: myName });
+  })();
+
+  /* ====== render messages ====== */
+  function addMessage(m){
+    // m: {id, user, text, time, meta?}
+    const el = document.createElement('div');
+    el.className = (m.meta && m.meta.system) ? 'sys' : 'msg' + (m.user === myName ? ' me' : '');
+    el.dataset.id = m.id;
+    el.dataset.user = m.user || '';
+    el.dataset.text = m.text || '';
+    if (m.meta && m.meta.system){
+      el.innerHTML = `<div>${esc(new Date(m.time).toLocaleTimeString())} — ${esc(m.text)}</div>`;
+    } else {
+      el.innerHTML = `<div class="meta"><strong>${esc(m.user)}</strong> • <span style="opacity:0.8">${new Date(m.time).toLocaleTimeString()}</span> • <span style="opacity:0.7;font-size:12px">id:${esc(m.id)}</span></div><div>${esc(m.text)}</div>`;
+      // events for context menu: long-press (mobile) and right-click (desktop)
+      el.addEventListener('touchstart', (e)=> onTouchStart(e, el));
+      el.addEventListener('touchend', (e)=> onTouchEnd(e, el));
+      el.addEventListener('contextmenu', (e)=> { e.preventDefault(); onOpenContext(e.clientX, e.clientY, el); });
     }
+    chat.appendChild(el);
+    chat.scrollTop = chat.scrollHeight;
+  }
 
-    function escapeHtml(s){ return s.replace(/[&<>"']/g, (m)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+  /* ====== socket events ====== */
+  socket.on('history', msgs => {
+    chat.innerHTML = '';
+    msgs.forEach(addMessage);
+  });
+  socket.on('message', m => addMessage(m));
+  socket.on('deleted', ({id}) => {
+    const node = Array.from(chat.children).find(n => n.dataset && n.dataset.id === id);
+    if (node) node.innerHTML = '<em class="sys">Сообщение удалено</em>';
+  });
+  socket.on('typing', ({user, typing}) => {
+    typingEl.textContent = typing ? `${user} печатает...` : '';
+  });
+  socket.on('error_msg', (o) => {
+    if (o.reason === 'rate_limit') alert('Слишком много сообщений — подожди.');
+    else if (o.reason === 'banned') alert('Вы забанены.');
+    else if (o.reason === 'repeat') alert('Не присылайте подряд одинаковые сообщения.');
+  });
 
-    // socket events
-    socket.on("connect", () => {
-      status.textContent = "online";
-    });
-    socket.on("disconnect", () => {
-      status.textContent = "offline";
-    });
+  /* ====== send messages ====== */
+  function send(){
+    const text = (msgInput.value||'').trim();
+    if (!text) return;
+    socket.emit('message', { text });
+    msgInput.value = '';
+    socket.emit('typing', false);
+  }
+  sendBtn.addEventListener('click', send);
+  msgInput.addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter') send();
+    else { socket.emit('typing', true); setTimeout(()=> socket.emit('typing', false), 900); }
+  });
 
-    socket.on("history", (msgs) => {
-      // clear
-      chatEl.innerHTML = "";
-      msgs.forEach(m => addMessage(m));
-    });
+  /* ====== long-press & context menu ====== */
+  let longPressTimer = null;
+  function onTouchStart(e, el){
+    const viewer = (myName || "").toLowerCase();
+    // only allow moderator to open ctx from UI
+    if (viewer !== moderatorNick.toLowerCase()) return;
+    longPressTimer = setTimeout(()=> {
+      const touch = e.touches && e.touches[0];
+      const x = touch ? touch.clientX : window.innerWidth/2;
+      const y = touch ? touch.clientY : window.innerHeight/2;
+      onOpenContext(x,y,el);
+    }, 520);
+  }
+  function onTouchEnd(e, el){ if (longPressTimer){ clearTimeout(longPressTimer); longPressTimer = null; } }
 
-    socket.on("message", (msg) => {
-      addMessage(msg);
-    });
+  function onOpenContext(x,y, el){
+    const viewer = (myName || "").toLowerCase();
+    if (viewer !== moderatorNick.toLowerCase()) return; // client-side only check — server enforces real auth via bot/X-MOD-SECRET
+    currentCtxTarget = { id: el.dataset.id, user: el.dataset.user, text: el.dataset.text, node: el };
+    ctx.style.left = Math.min(window.innerWidth - 160, Math.max(8, x)) + "px";
+    ctx.style.top = Math.min(window.innerHeight - 140, Math.max(8, y)) + "px";
+    ctx.style.display = 'block';
+    ctx.setAttribute('aria-hidden','false');
+  }
+  function closeCtx(){ ctx.style.display='none'; ctx.setAttribute('aria-hidden','true'); currentCtxTarget = null; }
 
-    socket.on("typing", ({ user, typing }) => {
-      if (typing) {
-        typingIndicator.textContent = `${user} печатает...`;
-      } else {
-        typingIndicator.textContent = "";
-      }
-    });
+  ctxClose.addEventListener('click', closeCtx);
+  ctxCopy.addEventListener('click', ()=> {
+    if (!currentCtxTarget) return;
+    navigator.clipboard?.writeText(currentCtxTarget.text || currentCtxTarget.user || '').then(()=> closeCtx());
+  });
 
-    // join
-    joinBtn.addEventListener("click", () => {
-      const v = (nameInput.value || "").trim();
-      if (!v) {
-        alert("Введите имя");
-        return;
-      }
-      myName = v.slice(0,32);
-      socket.emit("join", { user: myName });
-      nameInput.disabled = true;
-      joinBtn.disabled = true;
-      messageInput.focus();
-    });
+  ctxDelete.addEventListener('click', async ()=>{
+    if (!currentCtxTarget) return;
+    // send moderator delete request to /moderator/delete with X-MOD-SECRET from URL param (dev)
+    const secret = MOD_SECRET_IN_URL;
+    if (!secret) { alert('No MOD secret in URL (dev). Use bot or add ?mod=SECRET'); return; }
+    try{
+      const res = await fetch('/moderator/delete', {
+        method:'POST', headers:{ 'Content-Type':'application/json', 'X-MOD-SECRET': secret }, body: JSON.stringify({ id: currentCtxTarget.id })
+      });
+      const j = await res.json();
+      if (!j.ok) alert('Ошибка: ' + (j.error || 'unknown'));
+    }catch(e){ alert('Request failed'); }
+    closeCtx();
+  });
 
-    // send
-    function sendMessage() {
-      if (!myName) {
-        alert("Сначала введите имя и нажмите Войти");
-        return;
-      }
-      const txt = (messageInput.value || "").trim();
-      if (!txt) return;
-      socket.emit("message", { text: txt });
-      messageInput.value = "";
-      socket.emit("typing", false);
-    }
-    sendBtn.addEventListener("click", sendMessage);
-    messageInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        sendMessage();
-      } else {
-        // отправляем индикатор печати (throttle)
-        socket.emit("typing", true);
-        if (typingTimer) clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => {
-          socket.emit("typing", false);
-        }, 900);
-      }
-    });
+  ctxBan.addEventListener('click', async ()=>{
+    if (!currentCtxTarget) return;
+    const secret = MOD_SECRET_IN_URL;
+    if (!secret) { alert('No MOD secret in URL (dev). Use bot or add ?mod=SECRET'); return; }
+    try{
+      const res = await fetch('/moderator/ban', {
+        method:'POST', headers:{ 'Content-Type':'application/json', 'X-MOD-SECRET': secret }, body: JSON.stringify({ user: currentCtxTarget.user })
+      });
+      const j = await res.json();
+      if (!j.ok) alert('Ошибка: ' + (j.error || 'unknown'));
+    }catch(e){ alert('Request failed'); }
+    closeCtx();
+  });
 
-    // автоподключение в режиме dev: если есть имя в query
-    (function autoJoinFromQuery(){
-      const params = new URLSearchParams(location.search);
-      const n = params.get("name");
-      if (n) {
-        nameInput.value = n;
-        joinBtn.click();
-      }
-    })();
-  </script>
+  // hide ctx on outside click
+  window.addEventListener('click', (e)=> { if (!e.target.closest('.ctxmenu')) closeCtx(); });
+  window.addEventListener('touchstart', (e)=> { if (!e.target.closest('.ctxmenu')) closeCtx(); });
+
+  // Accessibility: escape hides menu
+  window.addEventListener('keydown', (e)=> { if (e.key === 'Escape') closeCtx(); });
+
+  /* ====== initial focus and UX niceties ====== */
+  msgInput.addEventListener('focus', ()=> { /* no-op for now */ });
+
+</script>
 </body>
 </html>
